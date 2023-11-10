@@ -97,8 +97,9 @@ spec:
 status:
   loadBalancer:
     ingress:
-    - hostname: allan-langlois.intrajus.tjrn
-    - hostname: gregg-basel.intrajus.tjrn
-    - hostname: jay-mostyn.intrajus.tjrn
-    - hostname: neil-plotkin.intrajus.tjrn
-    - hostname: peter-olubunmi.intrajus.tjrn
+    - hostname: daisy-matczak.intrajus.tjrn
+    - hostname: derek-melara.intrajus.tjrn
+    - hostname: elva-crespino.intrajus.tjrn
+    - hostname: kelli-derring.intrajus.tjrn
+    - hostname: owen-smestad.intrajus.tjrn
+
