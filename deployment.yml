@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redmine-deployment
+  labels:
+    app: redmine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redmine
+  template:
+    metadata:
+      labels:
+        app: redmine
+    spec:
+      containers:
+      - name: redmine-container
+        image: sua-imagem-do-redmine:latest
+        env:
+          - name: RAILS_ENV
+            value: production
+          - name: REDMINE_DB_ADAPTER
+            value: postgresql
+          - name: REDMINE_DB_DATABASE
+            valueFrom:
+              secretKeyRef:
+                name: redmine-secrets
+                key: database-name
+          - name: REDMINE_DB_HOST
+            valueFrom:
+              secretKeyRef:
+                name: redmine-secrets
+                key: database-host
+          - name: REDMINE_DB_PORT
+            valueFrom:
+              secretKeyRef:
+                name: redmine-secrets
+                key: database-port
+          - name: REDMINE_DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: redmine-secrets
+                key: database-username
+          - name: REDMINE_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: redmine-secrets
+                key: database-password
+        ports:
+        - containerPort: 3000
+      imagePullSecrets:
+      #- name: regcred  # Se necessário, especifique o segredo para autenticação privada do registro de contêiner
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redmine-service
+spec:
+  selector:
+    app: redmine
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+  type: LoadBalancer  # Ou ClusterIP, NodePort, dependendo dos requisitos
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redmine-secrets
+type: Opaque
+data:
+  database-name: base64_encoded_value  # Base64 encode os valores sensíveis
+  database-host: base64_encoded_value
+  database-port: base64_encoded_value
+  database-username: base64_encoded_value
+  database-password: base64_encoded_value
+
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: redmine
+  namespace: redmine-teste
+spec:
+  rules:
+  - host: redmine
+    http:
+      paths:
+      - backend:
+          serviceName: redmine
+          servicePort: 3000
+status:
+  loadBalancer:
+    ingress:
+    - hostname: allan-langlois.intrajus.tjrn
+    - hostname: gregg-basel.intrajus.tjrn
+    - hostname: jay-mostyn.intrajus.tjrn
+    - hostname: neil-plotkin.intrajus.tjrn
+    - hostname: peter-olubunmi.intrajus.tjrn
