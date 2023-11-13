@@ -1,3 +1,68 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redmine-secrets
+type: Opaque
+data:
+  database-name: base64_encoded_value  # Base64 encode os valores sensíveis
+  database-host: base64_encoded_value
+  database-port: base64_encoded_value
+  database-username: base64_encoded_value
+  database-password: base64_encoded_value
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redmine-configmap
+data:
+  LDAP_AUTH: "true"
+  LDAP_HOST: "seu-servidor-ldap"
+  LDAP_PORT: "sua-porta-ldap"
+  LDAP_BASE_DN: "seu-base-dn"
+  LDAP_BIND_DN: "seu-usuario-de-servico-dn"
+  LDAP_PASSWORD: "sua-senha"
+  LDAP_ON_THE_FLY_REGISTRATION: "true"
+  REDMINE_LDAP_FIRST_NAME: "givenName"
+  REDMINE_LDAP_LAST_NAME: "sn"
+  REDMINE_LDAP_MAIL: "mail"
+  REDMINE_LDAP_LOGIN: "sAMAccountName"
+  RAILS_ENV: "production"
+  REDMINE_DB_ADAPTER: "postgresql"
+  REDMINE_DB_DATABASE: "your-database-name-from-secret"
+  REDMINE_DB_HOST: "your-database-host-from-secret"
+  REDMINE_DB_PORT: "your-database-port-from-secret"
+  REDMINE_DB_USERNAME: "your-database-username-from-secret"
+  REDMINE_DB_PASSWORD: "your-database-password-from-secret"
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: redmine-pv
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/path/to/host/directory"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redmine-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -17,40 +82,18 @@ spec:
       containers:
       - name: redmine-container
         image: sua-imagem-do-redmine:latest
-        env:
-          - name: RAILS_ENV
-            value: production
-          - name: REDMINE_DB_ADAPTER
-            value: postgresql
-          - name: REDMINE_DB_DATABASE
-            valueFrom:
-              secretKeyRef:
-                name: redmine-secrets
-                key: database-name
-          - name: REDMINE_DB_HOST
-            valueFrom:
-              secretKeyRef:
-                name: redmine-secrets
-                key: database-host
-          - name: REDMINE_DB_PORT
-            valueFrom:
-              secretKeyRef:
-                name: redmine-secrets
-                key: database-port
-          - name: REDMINE_DB_USERNAME
-            valueFrom:
-              secretKeyRef:
-                name: redmine-secrets
-                key: database-username
-          - name: REDMINE_DB_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: redmine-secrets
-                key: database-password
+        envFrom:
+          - configMapRef:
+              name: redmine-configmap
         ports:
         - containerPort: 3000
-      imagePullSecrets:
-      #- name: regcred  # Se necessário, especifique o segredo para autenticação privada do registro de contêiner
+        volumeMounts:
+          - name: redmine-data
+            mountPath: /usr/src/redmine/files
+  volumes:
+    - name: redmine-data
+      persistentVolumeClaim:
+        claimName: redmine-pvc
 
 ---
 apiVersion: v1
@@ -66,40 +109,5 @@ spec:
       targetPort: 3000
   type: LoadBalancer  # Ou ClusterIP, NodePort, dependendo dos requisitos
 
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: redmine-secrets
-type: Opaque
-data:
-  database-name: base64_encoded_value  # Base64 encode os valores sensíveis
-  database-host: base64_encoded_value
-  database-port: base64_encoded_value
-  database-username: base64_encoded_value
-  database-password: base64_encoded_value
 
-
----
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: redmine
-  namespace: redmine-teste
-spec:
-  rules:
-  - host: redmine
-    http:
-      paths:
-      - backend:
-          serviceName: redmine
-          servicePort: 3000
-status:
-  loadBalancer:
-    ingress:
-    - hostname: daisy-matczak.intrajus.tjrn
-    - hostname: derek-melara.intrajus.tjrn
-    - hostname: elva-crespino.intrajus.tjrn
-    - hostname: kelli-derring.intrajus.tjrn
-    - hostname: owen-smestad.intrajus.tjrn
 
