@@ -1,4 +1,4 @@
-# Use Alpine Linux as base image
+# Use Alpine Linux as base images
 FROM alpine:latest
 
 # Mantenha o Maintainer para informações de contato
